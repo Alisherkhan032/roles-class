@@ -9,8 +9,7 @@ function paginate(req, res, next) {
     isNaN(pageNum) ||
     pageNum < 1 ||
     isNaN(limitNum) ||
-    limitNum < 1 ||
-    pageNum > totalPages
+    limitNum < 1 
   ) {
     return res
       .status(400)

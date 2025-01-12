@@ -6,17 +6,6 @@ const router = require('express').Router();
 
 
 router.get('/',filterProject,  paginate, (req, res) => {
-    const detailedProjects = res.paginatedResults.results
-        .map(project => {
-            const taskCount = findTasksByProject(project.id).length;
-            const manager = findManager(project.managerId);
-            return {
-                ...project,
-                taskCount,
-                managerName: manager ? manager.username : null,
-            };
-        });
-    res.paginatedResults.results = detailedProjects;
     res.json(res.paginatedResults);
 });
 
@@ -87,8 +76,23 @@ function authCreateProject(req, res, next) {
 }
 
 function filterProject(req, res, next){
-    req.paginationResource =  PROJECTS.filter(project => canViewProject(project, req.user));
+    const {managers,sortBy} = req.query;
+    const managerIdArray = managers ? managers.split(',').map(managerId => Number(managerId)) : [];
+    
+    req.paginationResource =  PROJECTS.filter(project => canViewProject(project, req.user)).filter(project => managerIdArray.length === 0 || managerIdArray.includes(project.managerId)).map(project => {
+        const taskCount = findTasksByProject(project.id).length;
+        const manager = findManager(project.managerId);
+        return {
+            ...project,
+            taskCount,
+            managerName: manager ? manager.username : null,
+        };
+    });
+
+    if(sortBy && sortBy === 'taskCount'){
+        req.paginationResource = req.paginationResource.sort((a,b)=> b.taskCount - a.taskCount);
+    }
     next();
 }
 
-module.exports = router;
+module.exports = router;        

@@ -5,13 +5,21 @@ const {paginate} = require('../middleware/pagination.js');
 
 const router = require('express').Router();
 
-router.get('/', paginate ,(req, res) => {
+router.get('/', filterTasks, paginate ,(req, res) => {
     const detailedTasks = res.paginatedResults.results
-        .filter(task => canViewTask(task, req.user))
         .map(task => fillTaskDetails(task));
     res.paginatedResults.results = detailedTasks;
     res.json(res.paginatedResults);
 });
+function filterTasks(req, res, next){
+    const {users} = req.query;
+    
+    const usersIdArray = users ? users.split(',').map(user => Number(user)) : [];
+    
+    req.paginationResource =  TASKS.filter(task => canViewTask(task, req.user)).filter(task => usersIdArray.length === 0 || usersIdArray.includes(task.userId));
+    console.log(req.paginationResource);
+    next();
+}
 
 router.get('/:id', populateTask, authViewTask, (req, res) => {
     res.json(fillTaskDetails(req.task));
